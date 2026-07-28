@@ -4,7 +4,8 @@ import sys
 
 
 def handle(args: argparse.Namespace):
-    from preprocessing import load_dataset, run_preprocessing
+    from preprocessing.helper import load_dataset
+    from preprocessing.automate import run_preprocessing
 
     print(
         f"⏳ Loading dataset from:\n- Primary : {args.primary}\n- Secondary : {args.secondary if args.secondary else ''}"
