@@ -1,0 +1,28 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Testing & Linting cache
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Local databases
+mlflow.db
+
+# MLflow local artifacts
+mlruns/
+mlartifacts/
+
+# Environment variables
+.env
