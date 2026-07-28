@@ -1,10 +1,10 @@
 import argparse
 import sys
 
-from preprocessing import handler as handle_preprocess
+from preprocessing.handler import handle as handle_preprocess
 from preprocessing import parser as preprocess
 
-# from training import handler as handle_train
+# from training.handler import handle as handle_train
 # from training import parser as train
 
 
