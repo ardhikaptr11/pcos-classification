@@ -1,0 +1,142 @@
+name: Model Training Pipeline CI
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - 'preprocessing/'
+      - 'dataset/'
+      - '**.md'
+      - 'docs/**'
+      - '.gitignore'
+      - 'LICENSE'
+  pull_request:
+    branches:
+      - main
+    paths-ignore:
+      - 'preprocessing/'
+      - 'dataset/'
+      - '**.md'
+      - 'docs/**'
+      - '.gitignore'
+      - 'LICENSE'
+
+env:
+  DAGSHUB_REPO_OWNER: ${{ secrets.DAGSHUB_REPO_OWNER }}
+  DAGSHUB_REPO_NAME: ${{ secrets.DAGSHUB_REPO_NAME }}
+  DAGSHUB_USER_TOKEN: ${{ secrets.DAGSHUB_USER_TOKEN }}
+  
+  MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
+  MLFLOW_TRACKING_USERNAME: ${{ secrets.DAGSHUB_REPO_OWNER }}
+  MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_USER_TOKEN }}
+
+  GDRIVE_CREDENTIALS: ${{ secrets.GDRIVE_CREDENTIALS }}
+  GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
+
+  DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
+  DOCKER_HUB_ACCESS_TOKEN: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+  DOCKER_HUB_REPO_NAME: ${{ secrets.DOCKER_HUB_REPO_NAME }}
+
+jobs:
+  test-and-run-pipeline:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+      
+    - name: Check Env
+      run: |
+        echo "MLflow Tracking URI is set"
+        echo "Dagshub Repo Owner: $DAGSHUB_REPO_OWNER"
+        echo "Dagshub Repo Name: $DAGSHUB_REPO_NAME"
+        echo "Google Drive Folder ID: $GDRIVE_FOLDER_ID"
+        echo "Docker Hub Username: $DOCKER_HUB_USERNAME"
+        echo "Docker Hub Repo Name: $DOCKER_HUB_REPO_NAME"
+    
+    - name: Install package manager
+      uses: astral-sh/setup-uv@v5
+      with:
+        enable-cache: true
+
+    - name: Install python dependencies
+      run: |
+        uv sync --all-extras --dev
+
+    - name: Check code formatting with Black
+      run: |
+        uv run black --check main.py training/ utils/
+
+    - name: Lint with Flake8
+      run: |
+        uv run flake8 main.py training/ utils/ --count --select=E9,F63,F7,F82 --show-source --statistics
+    
+    - name: Type check with MyPy
+      run: |
+        uv run mypy main.py training/ utils/
+        
+
+    - name: Run mlflow project
+      run: |
+        uv run mlflow run . -e baseline -P watch=dagshub --env-manager=local
+        uv run mlflow run . -e tuning -P watch=dagshub --env-manager=local
+    
+    - name: Get best MLflow run_id
+      run: |
+        RUN_ID=$(uv run python -c '
+        import mlflow
+
+        client = mlflow.tracking.MlflowClient()
+
+        experiments = client.search_experiments()
+        exp_ids = [exp.experiment_id for exp in experiments]
+
+        if exp_ids:
+            runs = client.search_runs(
+                experiment_ids=exp_ids,
+                order_by=["metrics.roc_auc DESC"],
+                max_results=1
+            )
+            if runs:
+                print(runs[0].info.run_id)
+        ')
+
+        if [ -n "$RUN_ID" ]; then
+          echo "RUN_ID=$RUN_ID" >> $GITHUB_ENV
+          echo "Latest run_id: $RUN_ID"
+        else
+          echo "❌ Failed to fetch RUN_ID"
+          exit 1
+        fi
+
+    - name: Upload to Google Drive
+      run: |
+        uv run python utils/upload.py
+
+    - name: Build Docker Model
+      if: env.RUN_ID != ''
+      run: |
+        uv run mlflow models build-docker --model-uri "runs:/$RUN_ID/model" --name $DOCKER_HUB_REPO_NAME
+
+    - name: Log in to Docker Hub
+      if: env.RUN_ID != ''
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_HUB_USERNAME }}
+        password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+    
+    - name: Tag Docker Image
+      if: env.RUN_ID != ''
+      run: |
+        docker tag $DOCKER_HUB_REPO_NAME $DOCKER_HUB_USERNAME/$DOCKER_HUB_REPO_NAME:latest
+
+    - name: Push Docker Image
+      if: env.RUN_ID != ''
+      run: |
+        docker push $DOCKER_HUB_USERNAME/$DOCKER_HUB_REPO_NAME:latest

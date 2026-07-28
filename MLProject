@@ -1,0 +1,16 @@
+name: PCOS Model Training
+
+conda_env: conda.yaml
+
+entry_points:
+  baseline:
+    parameters:
+      watch: {type: string, default: "local"}
+      config: {type: string, default: "config/config.yaml"}
+    command: "python main.py train --baseline --watch {watch} --config {config}"
+
+  tuning:
+    parameters:
+      watch: {type: string, default: "local"}
+      config: {type: string, default: "config/config.yaml"}
+    command: "python main.py train --tuning --watch {watch} --config {config}"

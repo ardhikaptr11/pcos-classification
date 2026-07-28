@@ -4,8 +4,8 @@ import sys
 from preprocessing.handler import handle as handle_preprocess
 from preprocessing import parser as preprocess
 
-# from training.handler import handle as handle_train
-# from training import parser as train
+from training.handler import handle as handle_train
+from training import parser as train
 
 
 def build_cli_parser() -> argparse.ArgumentParser:
@@ -25,8 +25,8 @@ def build_cli_parser() -> argparse.ArgumentParser:
     preprocess_parser = preprocess.parse(subparsers=subparsers)
     preprocess_parser.set_defaults(func=handle_preprocess)
 
-    # train_parser = train.parse(subparsers=subparsers)
-    # train_parser.set_defaults(func=handle_train)
+    train_parser = train.parse(subparsers=subparsers)
+    train_parser.set_defaults(func=handle_train)
 
     return parser
 
