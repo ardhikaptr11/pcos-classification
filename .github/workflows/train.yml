@@ -122,7 +122,11 @@ jobs:
     - name: Build Docker Model
       if: env.RUN_ID != ''
       run: |
-        uv run mlflow models build-docker --model-uri "runs:/$RUN_ID/model" --name $DOCKER_HUB_REPO_NAME
+        uv run mlflow models generate-dockerfile --model-uri "runs:/$RUN_ID/model" -d docker_build_dir
+        sed -i 's/python3\.9/python3.12/g' docker_build_dir/Dockerfile
+        
+        cd docker_build_dir
+        docker build -t $DOCKER_HUB_REPO_NAME .
 
     - name: Log in to Docker Hub
       if: env.RUN_ID != ''
