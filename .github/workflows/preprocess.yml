@@ -5,6 +5,7 @@ on:
     branches:
       - main
     paths-ignore:
+      - '.github/workflows/train.yml'
       - 'config/'
       - 'utils/'
       - 'training/'
@@ -16,6 +17,7 @@ on:
     branches:
       - main
     paths-ignore:
+      - '.github/workflows/train.yml'
       - 'config/'
       - 'utils/'
       - 'training/'

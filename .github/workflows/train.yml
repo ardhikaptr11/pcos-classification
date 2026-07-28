@@ -5,6 +5,7 @@ on:
     branches:
       - main
     paths-ignore:
+      - '.github/workflows/preprocess.yaml'
       - 'preprocessing/'
       - 'dataset/'
       - '**.md'
@@ -15,6 +16,7 @@ on:
     branches:
       - main
     paths-ignore:
+      - '.github/workflows/preprocess.yaml'
       - 'preprocessing/'
       - 'dataset/'
       - '**.md'
