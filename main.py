@@ -1,8 +1,10 @@
 import argparse
 import sys
 
-import parsers
-from handlers import handle_preprocess, handle_train
+from preprocessing import handler as handle_preprocess
+from preprocessing import parser as preprocess
+from training import handler as handle_train
+from training import parser as train
 
 
 def build_cli_parser() -> argparse.ArgumentParser:
@@ -19,10 +21,10 @@ def build_cli_parser() -> argparse.ArgumentParser:
         help="Use 'uv run python main.py <command> --help' for command-specific help.",
     )
 
-    preprocess_parser = parsers.preprocess(subparsers=subparsers)
+    preprocess_parser = preprocess.parse(subparsers=subparsers)
     preprocess_parser.set_defaults(func=handle_preprocess)
 
-    train_parser = parsers.train(subparsers=subparsers)
+    train_parser = train.parse(subparsers=subparsers)
     train_parser.set_defaults(func=handle_train)
 
     return parser
