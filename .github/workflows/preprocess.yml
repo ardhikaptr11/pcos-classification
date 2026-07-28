@@ -60,7 +60,7 @@ jobs:
 
     - name: Run pipeline
       run: |
-        uv run python main.py preprocess pcos-dataset_raw/PCOS_infertility.csv pcos-dataset_raw/PCOS_data_without_infertility.xlsx -o dataset/ci_test_output.csv
+        uv run python main.py preprocess dataset/PCOS_infertility.csv dataset/PCOS_data_without_infertility.xlsx -o dataset/ci_test_output.csv
 
     - name: Clean up test output
       if: always()
