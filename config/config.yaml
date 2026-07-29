@@ -1,4 +1,4 @@
-data_path: dataset/pcos_data_preprocessed.csv
+data_path: dataset/processed/pcos_data_preprocessed.csv
 experiment_name: PCOS Classification
 
 baseline:
