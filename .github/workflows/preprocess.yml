@@ -4,27 +4,19 @@ on:
   push:
     branches:
       - main
-    paths-ignore:
-      - '.github/workflows/train.yml'
-      - 'config/'
-      - 'utils/'
-      - 'training/'
-      - '**.md'
-      - 'docs/**'
-      - '.gitignore'
-      - 'LICENSE'
+    paths:
+      - 'main.py'
+      - '.github/workflows/preprocess.yml'
+      - 'dataset/raw/'
+      - 'preprocessing/'
   pull_request:
     branches:
       - main
-    paths-ignore:
-      - '.github/workflows/train.yml'
-      - 'config/'
-      - 'utils/'
-      - 'training/'
-      - '**.md'
-      - 'docs/**'
-      - '.gitignore'
-      - 'LICENSE'
+    paths:
+      - 'main.py'
+      - '.github/workflows/preprocess.yml'
+      - 'dataset/raw/'
+      - 'preprocessing/'
 
 jobs:
   test-and-run-pipeline:
@@ -62,8 +54,8 @@ jobs:
 
     - name: Run pipeline
       run: |
-        uv run python main.py preprocess dataset/PCOS_infertility.csv dataset/PCOS_data_without_infertility.xlsx -o dataset/ci_test_output.csv
+        uv run python main.py preprocess dataset/raw/PCOS_infertility.csv dataset/raw/PCOS_data_without_infertility.xlsx -o dataset/processed/ci_test_output.csv
 
     - name: Clean up test output
       if: always()
-      run: rm -f dataset/ci_test_output.csv
+      run: rm -f dataset/processed/ci_test_output.csv

@@ -19,7 +19,7 @@ def parse(subparsers, prog: str = "uv run python main.py preprocess"):
         "-o",
         "--output",
         type=str,
-        default="dataset/pcos_data_preprocessed.csv",
+        default="dataset/processed/pcos_data_preprocessed.csv",
         help="Output result file name (.csv)",
     )
 
