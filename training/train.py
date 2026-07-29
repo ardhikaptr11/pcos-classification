@@ -10,7 +10,7 @@ from sklearn.model_selection import train_test_split
 
 from training.baseline import train_baseline
 from training.tuning import train_tuning
-from utils.env import envs
+from env import envs
 
 
 def run_training(

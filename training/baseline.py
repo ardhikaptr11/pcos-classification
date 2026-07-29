@@ -10,7 +10,7 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from xgboost import XGBClassifier
 
-from utils.env import envs
+from env import envs
 
 
 def _train_and_evaluate(

@@ -13,3 +13,6 @@ envs: dict[str, str | None] = {
     "GDRIVE_FOLDER_ID": os.getenv("GDRIVE_FOLDER_ID"),
     "GDRIVE_CREDENTIALS": os.getenv("GDRIVE_CREDENTIALS"),
 }
+
+if __name__ == "__main__":
+    print(envs)

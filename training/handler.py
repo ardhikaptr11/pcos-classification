@@ -3,9 +3,9 @@ import sys
 
 from dotenv import load_dotenv
 
-from training.run import run_training
-from utils import load_config
-from utils.env import envs
+from training.train import run_training
+from .utils import load_config
+from env import envs
 
 load_dotenv()
 

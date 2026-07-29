@@ -7,9 +7,6 @@ from sklearn.metrics import RocCurveDisplay, confusion_matrix
 
 
 class LogFigures:
-    def __init__(self, trials):
-        self.trials = trials
-
     @staticmethod
     def conf_matrix(
         y_true: pd.Series,

@@ -1,8 +1,24 @@
+import sys
+from pathlib import Path
+
 import optuna
 import optunahub
+import yaml
 
 
-def get_sampler(sampler_cfg: dict) -> optuna.samplers.BaseSampler:
+def load_config(config_path: str) -> dict:
+    path = Path(config_path)
+    if not path.exists():
+        print(
+            f"❌ Error: Config file not found in path: '{config_path}'", file=sys.stderr
+        )
+        sys.exit(1)
+
+    with open(path, "r") as f:
+        return yaml.safe_load(f)
+
+
+def load_sampler(sampler_cfg: dict) -> optuna.samplers.BaseSampler:
     if not sampler_cfg:
         return optuna.samplers.TPESampler(seed=42)
 

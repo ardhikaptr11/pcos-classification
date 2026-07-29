@@ -13,10 +13,9 @@ from mlflow import xgboost as mlflow_xgb
 from sklearn.model_selection import StratifiedKFold, cross_val_score, train_test_split
 from sklearn.utils import estimator_html_repr
 
-from utils import get_sampler
-from utils.artifacts import LogFigures
-from utils.env import envs
-from utils.metrics import calculate_metrics
+from env import envs
+
+from .utils import LogFigures, calculate_metrics, load_sampler
 
 optuna.logging.set_verbosity(optuna.logging.WARNING)
 
@@ -88,7 +87,7 @@ def train_tuning(
     run_name = config.get("run_name", "XGBoost_Tuning_Optuna")
     optimization_target = config.get("optimization_target", "f1")
 
-    sampler = get_sampler(sampler_cfg)
+    sampler = load_sampler(sampler_cfg)
 
     n_neg_samples = float((y_train == 0).sum())
     n_pos_samples = float((y_train == 1).sum())

@@ -4,25 +4,19 @@ on:
   push:
     branches:
       - main
-    paths-ignore:
-      - '.github/workflows/preprocess.yaml'
-      - 'preprocessing/'
-      - 'dataset/'
-      - '**.md'
-      - 'docs/**'
-      - '.gitignore'
-      - 'LICENSE'
+    paths:
+      - 'main.py'
+      - '.github/workflows/train.yaml'
+      - 'training/'
+      - 'config/'
   pull_request:
     branches:
       - main
-    paths-ignore:
-      - '.github/workflows/preprocess.yaml'
-      - 'preprocessing/'
-      - 'dataset/'
-      - '**.md'
-      - 'docs/**'
-      - '.gitignore'
-      - 'LICENSE'
+    paths:
+      - 'main.py'
+      - '.github/workflows/train.yaml'
+      - 'training/'
+      - 'config/'
 
 env:
   DAGSHUB_REPO_OWNER: ${{ secrets.DAGSHUB_REPO_OWNER }}
@@ -35,10 +29,6 @@ env:
 
   GDRIVE_CREDENTIALS: ${{ secrets.GDRIVE_CREDENTIALS }}
   GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
-
-  DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
-  DOCKER_HUB_ACCESS_TOKEN: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
-  DOCKER_HUB_REPO_NAME: ${{ secrets.DOCKER_HUB_REPO_NAME }}
 
 jobs:
   test-and-run-pipeline:
@@ -59,8 +49,6 @@ jobs:
         echo "Dagshub Repo Owner: $DAGSHUB_REPO_OWNER"
         echo "Dagshub Repo Name: $DAGSHUB_REPO_NAME"
         echo "Google Drive Folder ID: $GDRIVE_FOLDER_ID"
-        echo "Docker Hub Username: $DOCKER_HUB_USERNAME"
-        echo "Docker Hub Repo Name: $DOCKER_HUB_REPO_NAME"
     
     - name: Install package manager
       uses: astral-sh/setup-uv@v5
@@ -73,15 +61,15 @@ jobs:
 
     - name: Check code formatting with Black
       run: |
-        uv run black --check main.py training/ utils/
+        uv run black --check main.py training/
 
     - name: Lint with Flake8
       run: |
-        uv run flake8 main.py training/ utils/ --count --select=E9,F63,F7,F82 --show-source --statistics
+        uv run flake8 main.py training/ --count --select=E9,F63,F7,F82 --show-source --statistics
     
     - name: Type check with MyPy
       run: |
-        uv run mypy main.py training/ utils/
+        uv run mypy main.py training/
         
 
     - name: Run mlflow project
@@ -119,30 +107,4 @@ jobs:
 
     - name: Upload to Google Drive
       run: |
-        uv run python utils/upload.py
-
-    - name: Build Docker Model
-      if: env.RUN_ID != ''
-      run: |
-        uv run mlflow models generate-dockerfile --model-uri "runs:/$RUN_ID/model" -d docker_build_dir
-        sed -i 's/python3\.9/python3.12/g' docker_build_dir/Dockerfile
-        
-        cd docker_build_dir
-        docker build -t $DOCKER_HUB_REPO_NAME .
-
-    - name: Log in to Docker Hub
-      if: env.RUN_ID != ''
-      uses: docker/login-action@v3
-      with:
-        username: ${{ secrets.DOCKER_HUB_USERNAME }}
-        password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
-    
-    - name: Tag Docker Image
-      if: env.RUN_ID != ''
-      run: |
-        docker tag $DOCKER_HUB_REPO_NAME $DOCKER_HUB_USERNAME/$DOCKER_HUB_REPO_NAME:latest
-
-    - name: Push Docker Image
-      if: env.RUN_ID != ''
-      run: |
-        docker push $DOCKER_HUB_USERNAME/$DOCKER_HUB_REPO_NAME:latest
+        uv run python training/utils/upload.py
