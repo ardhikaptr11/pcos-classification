@@ -7,16 +7,18 @@ on:
     paths:
       - 'main.py'
       - '.github/workflows/preprocess.yml'
-      - 'dataset/raw/'
-      - 'preprocessing/'
+      - 'dataset/raw/**/*.csv'
+      - 'dataset/raw/**/*.xlsx'
+      - 'preprocessing/**'
   pull_request:
     branches:
       - main
     paths:
       - 'main.py'
       - '.github/workflows/preprocess.yml'
-      - 'dataset/raw/'
-      - 'preprocessing/'
+      - 'dataset/raw/**/*.csv'
+      - 'dataset/raw/**/*.xlsx'
+      - 'preprocessing/**'
 
 jobs:
   test-and-run-pipeline:

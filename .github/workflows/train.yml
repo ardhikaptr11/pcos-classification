@@ -7,16 +7,16 @@ on:
     paths:
       - 'main.py'
       - '.github/workflows/train.yml'
-      - 'training/'
-      - 'config/'
+      - 'training/**'
+      - 'config/**'
   pull_request:
     branches:
       - main
     paths:
       - 'main.py'
       - '.github/workflows/train.yml'
-      - 'training/'
-      - 'config/'
+      - 'training/**'
+      - 'config/**'
 
 env:
   DAGSHUB_REPO_OWNER: ${{ secrets.DAGSHUB_REPO_OWNER }}
