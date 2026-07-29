@@ -6,7 +6,7 @@ on:
       - main
     paths:
       - 'main.py'
-      - '.github/workflows/train.yaml'
+      - '.github/workflows/train.yml'
       - 'training/'
       - 'config/'
   pull_request:
@@ -14,7 +14,7 @@ on:
       - main
     paths:
       - 'main.py'
-      - '.github/workflows/train.yaml'
+      - '.github/workflows/train.yml'
       - 'training/'
       - 'config/'
 
