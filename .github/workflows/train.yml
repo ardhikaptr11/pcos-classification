@@ -17,6 +17,7 @@ on:
       - '.github/workflows/train.yml'
       - 'training/**'
       - 'config/**'
+  workflow_dispatch:
 
 env:
   DAGSHUB_REPO_OWNER: ${{ secrets.DAGSHUB_REPO_OWNER }}

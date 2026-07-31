@@ -16,6 +16,7 @@ on:
       - 'deployment/**'
       - 'main.py'
       - 'Dockerfile'
+  workflow_dispatch:
 
 jobs:
   check-code-quality:
