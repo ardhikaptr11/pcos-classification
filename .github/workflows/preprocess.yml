@@ -21,43 +21,60 @@ on:
       - 'preprocessing/**'
 
 jobs:
-  test-and-run-pipeline:
+  check-code-quality:
+    name: Lint, Format, and Type Check
     runs-on: ubuntu-latest
-
     steps:
-    - name: Check out repository
-      uses: actions/checkout@v4
+      - name: Check out repository
+        uses: actions/checkout@v4
 
-    - name: Set up Python 3.12
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.12'
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
 
-    - name: Install uv
-      uses: astral-sh/setup-uv@v5
-      with:
-        enable-cache: true
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
 
-    - name: Install dependencies
-      run: |
-        uv sync --all-extras --dev
+      - name: Install dependencies
+        run: uv sync --all-extras --dev
 
-    - name: Check code formatting with Black
-      run: |
-        uv run black --check main.py preprocessing/
+      - name: Check code formatting with Black
+        run: uv run black --check main.py preprocessing/
 
-    - name: Lint with Flake8
-      run: |
-        uv run flake8 main.py preprocessing/ --count --select=E9,F63,F7,F82 --show-source --statistics
+      - name: Lint with Flake8
+        run: uv run flake8 main.py preprocessing/ --count --select=E9,F63,F7,F82 --show-source --statistics
 
-    - name: Type check with MyPy
-      run: |
-        uv run mypy main.py preprocessing/
+      - name: Type check with MyPy
+        run: uv run mypy main.py preprocessing/
 
-    - name: Run pipeline
-      run: |
-        uv run python main.py preprocess dataset/raw/PCOS_infertility.csv dataset/raw/PCOS_data_without_infertility.xlsx -o dataset/processed/ci_test_output.csv
+  run-preprocessing:
+    name: Run Preprocessing Pipeline
+    needs: check-code-quality
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
 
-    - name: Clean up test output
-      if: always()
-      run: rm -f dataset/processed/ci_test_output.csv
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --all-extras --dev
+
+      - name: Run pipeline
+        run: |
+          uv run python main.py preprocess dataset/raw/PCOS_infertility.csv dataset/raw/PCOS_data_without_infertility.xlsx -o dataset/processed/ci_test_output.csv
+
+      - name: Clean up test output
+        if: always()
+        run: rm -f dataset/processed/ci_test_output.csv
