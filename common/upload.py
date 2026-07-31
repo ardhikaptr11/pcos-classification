@@ -14,11 +14,11 @@ from env import envs
 
 logger = setup_logger()
 
-creds_data = json.loads(os.environ["GDRIVE_CREDENTIALS"])
+creds_data = json.loads(envs["GDRIVE_CREDENTIALS"])
 credentials = Credentials.from_authorized_user_info(creds_data, scopes=["https://www.googleapis.com/auth/drive"])
 
 service = build("drive", "v3", credentials=credentials)
-SHARED_DRIVE_ID = os.environ["GDRIVE_FOLDER_ID"]
+SHARED_DRIVE_ID = envs["GDRIVE_FOLDER_ID"]
 
 
 def to_drive(run_id: str):
