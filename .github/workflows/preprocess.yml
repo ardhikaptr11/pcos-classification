@@ -19,7 +19,6 @@ on:
       - 'dataset/raw/**/*.csv'
       - 'dataset/raw/**/*.xlsx'
       - 'preprocessing/**'
-  workflow_dispatch:
 
 jobs:
   check-code-quality:

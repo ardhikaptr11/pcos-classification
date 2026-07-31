@@ -14,15 +14,16 @@ from env import envs
 
 logger = setup_logger()
 
-creds_data = json.loads(envs["GDRIVE_CREDENTIALS"])
-credentials = Credentials.from_authorized_user_info(creds_data, scopes=["https://www.googleapis.com/auth/drive"])
-
-service = build("drive", "v3", credentials=credentials)
-SHARED_DRIVE_ID = envs["GDRIVE_FOLDER_ID"]
-
+def _get_drive_service():
+    creds_data = json.loads(envs["GDRIVE_CREDENTIALS"])
+    credentials = Credentials.from_authorized_user_info(creds_data, scopes=["https://www.googleapis.com/auth/drive"])
+    return build("drive", "v3", credentials=credentials)
 
 def to_drive(run_id: str):
     logger.info(f"Fetching artifacts for RUN_ID: {run_id}...")
+    
+    service = _get_drive_service()
+    SHARED_DRIVE_ID = envs["GDRIVE_FOLDER_ID"]
 
     with tempfile.TemporaryDirectory() as temp_dir:
         try:
