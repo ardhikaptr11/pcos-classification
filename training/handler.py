@@ -3,16 +3,22 @@ import sys
 
 from dotenv import load_dotenv
 
-from training.train import run_training
-from .utils import load_config
+from common.logger import setup_logger
 from env import envs
+from training.baseline import run_local_train_baseline
+from training.train import run_training
+from training.tuning import run_local_train_tuning
+
+from .utils import load_config
+
+logger = setup_logger()
 
 load_dotenv()
 
 
 def handle(args: argparse.Namespace):
     if args.baseline and args.trials is not None:
-        print("❌ Error: --trials cannot be used with --baseline", file=sys.stderr)
+        logger.error("Error: --trials cannot be used with --baseline")
         sys.exit(1)
 
     config = load_config(args.config)
@@ -20,34 +26,52 @@ def handle(args: argparse.Namespace):
     experiment_name = config["experiment_name"]
     data_path = config["data_path"]
 
-    tracking_uri = envs["MLFLOW_TRACKING_URI_LOCAL"] if args.watch == "local" else None
-
     mode = "baseline" if args.baseline else "tuning"
     cfg = config.get(mode, {})
 
+    tracking_uri = envs["MLFLOW_TRACKING_URI_LOCAL"]
+
     if args.baseline:
-        print("🚀 Executing Baseline Model Training...")
+        if args.watch == "local":
+            is_promoted, _ = run_local_train_baseline(
+                data_path=data_path,
+                tracking_uri=tracking_uri,
+                config=cfg,
+                experiment_name=experiment_name,
+            )
 
-        run_training(
-            experiment_name=experiment_name,
-            data_path=data_path,
-            tracking_uri=tracking_uri,
-            config=cfg,
-        )
+            if is_promoted:
+                logger.info("✅ Model promoted as champion!")
+        elif args.watch == "remote":
+            run_training(
+                experiment_name=experiment_name,
+                data_path=data_path,
+                config=cfg,
+            )
 
-        print("✅ Model Training Completed!")
+        logger.info("✅ Training Completed!")
     elif args.tuning:
-        print("⚙️ Executing Model Training with Hyperparameter Tuning...")
+        if args.watch == "local":
+            is_promoted, run_id = run_local_train_tuning(
+                data_path=data_path,
+                tracking_uri=tracking_uri,
+                config=cfg,
+                experiment_name=experiment_name,
+            )
 
-        n_trials = args.trials if args.trials is not None else 50
+            if is_promoted and run_id:
+                from common import upload_to_drive
 
-        run_training(
-            use_tuning=True,
-            experiment_name=experiment_name,
-            data_path=data_path,
-            tracking_uri=tracking_uri,
-            config=cfg,
-            n_trials=n_trials,
-        )
+                logger.info("✅ Model promoted to new champion!")
+                logger.info("Uploading artifacts to Google Drive...")
 
-        print("✅ Hyperparameter Tuning Completed!")
+                upload_to_drive(run_id=run_id)
+        elif args.watch == "remote":
+            run_training(
+                use_tuning=True,
+                experiment_name=experiment_name,
+                data_path=data_path,
+                config=cfg,
+            )
+
+        logger.info("✅ Hyperparameter Tuning Completed!")

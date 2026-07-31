@@ -23,6 +23,7 @@ mlflow.db
 # MLflow local artifacts
 mlruns/
 mlartifacts/
+model_artifacts/
 
 # Environment variables
 .env

@@ -3,7 +3,6 @@ import sys
 from pathlib import Path
 from typing import Any, TypedDict
 
-import dagshub
 import mlflow
 import numpy as np
 import optuna
@@ -13,11 +12,13 @@ from mlflow import xgboost as mlflow_xgb
 from sklearn.model_selection import StratifiedKFold, cross_val_score, train_test_split
 from sklearn.utils import estimator_html_repr
 
-from env import envs
+from common.logger import setup_logger
 
-from .utils import LogFigures, calculate_metrics, load_sampler
+from .utils import LogFigures, calculate_metrics, load_sampler, validate_and_promote
 
 optuna.logging.set_verbosity(optuna.logging.WARNING)
+
+logger = setup_logger()
 
 
 class Labels(TypedDict):
@@ -77,8 +78,8 @@ def train_tuning(
     y_train: pd.Series,
     X_test: pd.DataFrame,
     y_test: pd.Series,
+    n_trials: int | None,
     config: dict | None = None,
-    n_trials: int | None = 30,
 ):
     config = config or {}
 
@@ -137,7 +138,7 @@ def train_tuning(
 
         return scores.mean()
 
-    print(f"🔍 Starting Optuna Search ({n_trials} trials)...")
+    logger.info(f"Starting Optuna search with {n_trials} trials...")
     study = optuna.create_study(sampler=sampler, direction="maximize")
     study.optimize(objective, n_trials=n_trials)  # type: ignore
 
@@ -145,8 +146,8 @@ def train_tuning(
     best_params["random_state"] = 42
     best_params["eval_metric"] = "logloss"
 
-    print(f"🏆 Best Trial Value: {study.best_value:.4f}")
-    print(f"📌 Best Parameters: {best_params}")
+    logger.info(f"🏆 Best Trial Value: {study.best_value:.4f}")
+    logger.info(f"📌 Best Parameters: {best_params}")
 
     # Retrain the model using the best parameters
     best_model = xgb.XGBClassifier(**best_params)
@@ -161,9 +162,21 @@ def train_tuning(
     env_run_id = os.getenv("MLFLOW_RUN_ID")
     active_run = mlflow.active_run()
 
+    def apply_tags():
+        is_local_exec = os.getenv("GITHUB_ACTIONS") != "true"
+        source = "Local Execution" if is_local_exec else "CI/CD Pipeline"
+        commit_sha = os.getenv("GITHUB_SHA", "local_run")[:9]
+
+        mlflow.set_tag("source", source)
+        mlflow.set_tag("commit_sha", commit_sha)
+        mlflow.set_tag("run_type", "baseline")
+        mlflow.set_tag("is_champion", "false")
+
     if active_run or env_run_id:
         current_run_id = active_run.info.run_id if active_run else env_run_id
+
         mlflow.set_tag("mlflow.runName", run_name)
+        apply_tags()
 
         _log_artifacts(
             best_params=best_params,
@@ -178,6 +191,8 @@ def train_tuning(
         _evaluate(run_id=current_run_id, eval_data=eval_data)
     else:
         with mlflow.start_run(run_name=run_name) as run:
+            apply_tags()
+
             _log_artifacts(
                 best_params=best_params,
                 opt_target_name=optimization_target,
@@ -190,35 +205,24 @@ def train_tuning(
 
             _evaluate(run_id=run.info.run_id, eval_data=eval_data)
 
+    return best_model
 
-def run_train_tuning(
-    experiment_name: str,
+
+def run_local_train_tuning(
+    tracking_uri: str,
     data_path: str,
-    tracking_uri: str | None,
+    experiment_name: str = "PCOS Classification",
     n_trials: int = 30,
     config: dict[str, Any] | None = None,
 ):
-    if tracking_uri:
-        mlflow.set_tracking_uri(uri=tracking_uri)
-    else:
-        print("🌐 Connecting to DagsHub...")
-
-        repo_owner = os.getenv("DAGSHUB_REPO_OWNER")
-        repo_name = os.getenv("DAGSHUB_REPO_NAME")
-
-        if not repo_owner or not repo_name:
-            raise ValueError(
-                "DAGSHUB_REPO_OWNER or DAGSHUB_REPO_NAME is missing in .env"
-            )
-
-        dagshub.init(repo_owner=repo_owner, repo_name=repo_name, mlflow=True)
-
-    if not mlflow.active_run() and not os.getenv("MLFLOW_RUN_ID"):
-        mlflow.set_experiment(experiment_name)
+    mlflow.set_tracking_uri(uri=tracking_uri)
+    mlflow.set_experiment(experiment_name)
+    logger.info(f"MLflow tracking URI: {tracking_uri}")
+    logger.info(f"MLflow experiment name: {experiment_name}")
 
     file_path = Path(data_path)
     if not file_path.exists():
-        print(f"❌ Error: Dataset not found in path: '{data_path}'", file=sys.stderr)
+        logger.error(f"Dataset not found in path: '{data_path}'")
         sys.exit(1)
 
     data = pd.read_csv(file_path)
@@ -229,7 +233,7 @@ def run_train_tuning(
         X, y, test_size=0.2, random_state=42, stratify=y
     )
 
-    train_tuning(
+    trained_model = train_tuning(
         X_train=X_train,
         y_train=y_train,
         X_test=X_test,
@@ -238,10 +242,19 @@ def run_train_tuning(
         config=config,
     )
 
+    model_name = "pcos-xgboost"
 
-if __name__ == "__main__":
-    run_train_tuning(
-        experiment_name="PCOS Classification",
-        data_path="dataset/pcos_data_preprocessed.csv",
-        tracking_uri=envs["MLFLOW_TRACKING_URI_LOCAL"],
+    return validate_and_promote(
+        model_name=model_name,
+        challenger_model=trained_model,
+        X_test=X_test,
+        y_test=y_test,
     )
+
+
+# if __name__ == "__main__":
+#     run_train_tuning(
+#         experiment_name="PCOS Classification",
+#         data_path="dataset/pcos_data_preprocessed.csv",
+#         tracking_uri=envs["MLFLOW_TRACKING_URI_LOCAL"],
+#     )

@@ -3,14 +3,16 @@ import sys
 from pathlib import Path
 from typing import Any
 
-import dagshub
 import mlflow
 import mlflow.xgboost as mlflow_xgb
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from xgboost import XGBClassifier
 
-from env import envs
+from common.logger import setup_logger
+from training.utils import check_champion, validate_and_promote
+
+logger = setup_logger()
 
 
 def _train_and_evaluate(
@@ -30,6 +32,8 @@ def _train_and_evaluate(
         targets="label",
         model_type="classifier",
     )
+
+    return model
 
 
 def train_baseline(
@@ -58,11 +62,23 @@ def train_baseline(
     env_run_id = os.getenv("MLFLOW_RUN_ID")
     active_run = mlflow.active_run()
 
+    def apply_tags():
+        is_local_exec = os.getenv("GITHUB_ACTIONS") != "true"
+        source = "Local Execution" if is_local_exec else "CI/CD Pipeline"
+        commit_sha = os.getenv("GITHUB_SHA", "local_run")[:9]
+
+        mlflow.set_tag("source", source)
+        mlflow.set_tag("commit_sha", commit_sha)
+        mlflow.set_tag("run_type", "baseline")
+        mlflow.set_tag("is_champion", "false")
+
     if active_run or env_run_id:
         current_run_id = active_run.info.run_id if active_run else env_run_id
+
+        apply_tags()
         mlflow.set_tag(key="mlflow.runName", value=run_name)
 
-        _train_and_evaluate(
+        trained_model = _train_and_evaluate(
             params=params,
             X_train=X_train,
             y_train=y_train,
@@ -72,7 +88,9 @@ def train_baseline(
 
     else:
         with mlflow.start_run(run_name=run_name) as run:
-            _train_and_evaluate(
+            apply_tags()
+
+            trained_model = _train_and_evaluate(
                 params=params,
                 X_train=X_train,
                 y_train=y_train,
@@ -80,35 +98,35 @@ def train_baseline(
                 run_id=run.info.run_id,
             )
 
+    return trained_model
 
-def run_train_baseline(
-    experiment_name: str,
+
+def run_local_train_baseline(
     data_path: str,
-    tracking_uri: str | None,
+    tracking_uri: str,
     config: dict[str, Any] | None = None,
+    experiment_name: str = "PCOS Classification",
 ):
-    if tracking_uri:
-        mlflow.set_tracking_uri(uri=tracking_uri)
-    else:
-        print("🌐 Connecting to DagsHub...")
-
-        repo_owner = envs["DAGSHUB_REPO_OWNER"]
-        repo_name = envs["DAGSHUB_REPO_NAME"]
-
-        if not repo_owner or not repo_name:
-            raise ValueError(
-                "DAGSHUB_REPO_OWNER or DAGSHUB_REPO_NAME is missing in .env"
-            )
-
-        dagshub.init(repo_owner=repo_owner, repo_name=repo_name, mlflow=True)
-
-    if not mlflow.active_run() and not os.getenv("MLFLOW_RUN_ID"):
-        mlflow.set_experiment(experiment_name)
+    mlflow.set_tracking_uri(uri=tracking_uri)
+    mlflow.set_experiment(experiment_name)
+    logger.info(f"MLflow tracking URI: {tracking_uri}")
+    logger.info(f"MLflow experiment name: {experiment_name}")
 
     file_path = Path(data_path)
     if not file_path.exists():
-        print(f"❌ Error: Dataset not found in path: '{data_path}'", file=sys.stderr)
+        logger.error(f"Dataset not found in path: '{data_path}'")
         sys.exit(1)
+
+    model_name = "pcos-xgboost"
+
+    # Check if champion already exists
+    has_champion = check_champion(model_name=model_name)
+
+    if has_champion:
+        logger.info(
+            "Champion already exists. Skipping baseline model training to save resources."
+        )
+        return False, None
 
     data = pd.read_csv(file_path)
     X = data.drop(columns=["pcos_yn"])
@@ -118,14 +136,21 @@ def run_train_baseline(
         X, y, test_size=0.2, random_state=42, stratify=y
     )
 
-    train_baseline(
+    trained_model = train_baseline(
         X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test, config=config
     )
 
-
-if __name__ == "__main__":
-    run_train_baseline(
-        experiment_name="PCOS Classification",
-        data_path="dataset/pcos_data_preprocessed.csv",
-        tracking_uri=envs["MLFLOW_TRACKING_URI_LOCAL"],
+    return validate_and_promote(
+        model_name=model_name,
+        challenger_model=trained_model,
+        X_test=X_test,
+        y_test=y_test,
     )
+
+
+# if __name__ == "__main__":
+#     run_train_baseline(
+#         experiment_name="PCOS Classification",
+#         data_path="dataset/pcos_data_preprocessed.csv",
+#         tracking_uri=envs["MLFLOW_TRACKING_URI_LOCAL"],
+#     )

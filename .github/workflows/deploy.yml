@@ -1,0 +1,141 @@
+name: Deployment Pipeline (CI/CD)
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'deployment/**'
+      - 'main.py'
+      - 'Dockerfile'
+      - '.github/workflows/deploy.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'deployment/**'
+      - 'main.py'
+      - 'Dockerfile'
+
+jobs:
+  check-code-quality:
+    name: Lint, Format, and Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          
+      - name: Install dependencies
+        run: uv sync --all-extras --dev
+      
+      - name: Check code formatting with Black
+        run: uv run black --check main.py deployment/ 
+
+      - name: Lint with Flake8
+        run: uv run flake8 main.py deployment/ --count --select=E9,F63,F7,F82 --show-source --statistics
+        
+      - name: Type check with MyPy
+        run: uv run mypy main.py deployment/ 
+
+  test-deployment:
+    name: Test Deployment Logic
+    needs: check-code-quality 
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          
+      - name: Install dependencies
+        run: uv sync --all-extras --dev
+      
+      - name: Run Unit Tests
+        run: uv run pytest tests/test_deployment.py
+      
+      - name: CLI Sanity Check
+        run: |
+          uv run python main.py deploy --help
+          uv run python main.py deploy serve --help
+
+  build-and-deploy:
+    name: Build Docker & Deploy to HF Space
+    needs: test-deployment 
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    env:
+      MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
+      MLFLOW_TRACKING_USERNAME: ${{ secrets.DAGSHUB_REPO_OWNER }}
+      MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_USER_TOKEN }}
+
+      DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
+      DOCKER_HUB_ACCESS_TOKEN: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+      DOCKER_HUB_REPO_NAME: ${{ secrets.DOCKER_HUB_REPO_NAME }}
+
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      HF_USERNAME: ${{ secrets.HF_USERNAME }} 
+      HF_SPACE_NAME: ${{ secrets.HF_SPACE_NAME }}
+      
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
+
+      - name: Install package manager
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          
+      - name: Install dependencies
+        run: uv sync --no-dev
+      
+      - name: Download Best Model from DagsHub
+        run: uv run python main.py deploy download-model -S dagshub
+      
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+          
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/${{ secrets.DOCKER_HUB_REPO_NAME }}:latest
+
+      - name: Generate requirements.txt
+        run: uv export --format requirements-txt --no-dev > requirements.txt
+
+      - name: Push to Hugging Face Spaces
+        run: |
+          git config --global user.email "bot@github-actions.com"
+          git config --global user.name "GitHub Actions"
+          
+          git add requirements.txt
+          git add . 
+          
+          git commit -m "Auto-deploy: Sync latest code, model, and requirements" || echo "No changes to commit"
+          
+          git push -f https://$HF_USERNAME:$HF_TOKEN@huggingface.co/spaces/$HF_USERNAME/$HF_SPACE_NAME HEAD:main

@@ -1,11 +1,12 @@
 import argparse
 import sys
 
-from preprocessing.handler import handle as handle_preprocess
+from deployment import parser as deploy
+from deployment.handler import handle as handle_deploy
 from preprocessing import parser as preprocess
-
-from training.handler import handle as handle_train
+from preprocessing.handler import handle as handle_preprocess
 from training import parser as train
+from training.handler import handle as handle_train
 
 
 def build_cli_parser() -> argparse.ArgumentParser:
@@ -27,6 +28,9 @@ def build_cli_parser() -> argparse.ArgumentParser:
 
     train_parser = train.parse(subparsers=subparsers)
     train_parser.set_defaults(func=handle_train)
+
+    deploy_parser = deploy.parse(subparsers=subparsers)
+    deploy_parser.set_defaults(func=handle_deploy)
 
     return parser
 

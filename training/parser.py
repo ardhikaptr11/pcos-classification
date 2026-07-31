@@ -17,7 +17,7 @@ def parse(subparsers, prog: str = "uv run python main.py train"):
         "-W",
         "--watch",
         type=str,
-        choices=["local", "dagshub"],
+        choices=["local", "remote"],
         default="local",
         help="Watch the experiment",
     )
