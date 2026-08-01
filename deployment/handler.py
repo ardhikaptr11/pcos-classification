@@ -29,7 +29,7 @@ def handle(args):
         internet_on = is_connected()
 
         dest = (
-            "model_artifacts/hub"
+            "model_artifacts/hub/model"
             if args.source == "dagshub"
             else "model_artifacts/drive"
         )

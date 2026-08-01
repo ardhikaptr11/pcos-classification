@@ -4,7 +4,6 @@ from contextlib import asynccontextmanager
 from http import HTTPStatus
 from typing import Optional
 
-import gradio as gr
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from prometheus_fastapi_instrumentator import Instrumentator
@@ -124,12 +123,3 @@ def predict_endpoint(data: PatientData):
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-
-demo = gr.Interface(
-    fn=lambda: "PCOS Classification API is running smoothly in the background!",
-    inputs=None,
-    outputs="text",
-    title="API Status",
-)
-app = gr.mount_gradio_app(app, demo, path="/ui")

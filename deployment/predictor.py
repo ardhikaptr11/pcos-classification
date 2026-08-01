@@ -1,6 +1,3 @@
-import os
-from typing import Any
-
 import mlflow.xgboost
 import numpy as np
 import pandas as pd

@@ -131,24 +131,25 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/${{ secrets.DOCKER_HUB_REPO_NAME }}:latest
 
-      - name: Generate requirements.txt
-        run: uv export --format requirements-txt --no-dev > requirements.txt
-
-      - name: Push to Hugging Face Spaces
-        run: |
-          git config --global user.email "bot@github-actions.com"
-          git config --global user.name "GitHub Actions"
+      # NOTE: Will be implemented soon
+      # - name: Sync Model to Next.js Repository
+      #   run: |
+      #     git config --global user.email "ml-bot@github-actions.com"
+      #     git config --global user.name "ML Automation Bot"
           
-          rm -rf dataset/
-          rm -rf preprocessing/
-          rm -rf training/
-          rm -rf notebooks/
+      #     git clone https://x-access-token:${{ secrets.NEXTJS_REPO_PAT }}@github.com/${{ secrets.NEXTJS_GITHUB_USERNAME }}/${{ secrets.NEXTJS_REPO_NAME }}.git temp-nextjs-repo
           
-          git checkout --orphan hf-deploy
+      #     mkdir -p temp-nextjs-repo/api/model_artifacts/model/
           
-          git add requirements.txt
-          git add . 
+      #     cp model_artifacts/hub/model/model.xgb temp-nextjs-repo/api/model_artifacts/model/model.xgb
           
-          git commit -m "Auto-deploy: Sync latest code, model, and requirements"
+      #     cd temp-nextjs-repo
           
-          git push -f https://$HF_USERNAME:$HF_TOKEN@huggingface.co/spaces/$HF_USERNAME/$HF_SPACE_NAME hf-deploy:main
+      #     if git status --porcelain | grep -q "model.xgb"; then
+      #       git add api/model_artifacts/model/model.xgb
+      #       git commit -m "Auto-update: Sync latest XGBoost model from ML pipeline [skip ci]"
+      #       git push origin main
+      #       echo "✅ Model synced successfully!"
+      #     else
+      #       echo "ℹ️ No changes detected. Model already up-to-date."
+      #     fi

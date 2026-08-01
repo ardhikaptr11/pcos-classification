@@ -8,7 +8,6 @@ dependencies = [
     "dagshub>=0.7.1",
     "fastapi>=0.140.13",
     "google-api-python-client>=2.198.0",
-    "gradio>=6.22.0",
     "mlflow==2.19.0",
     "numpy>=2.5.1",
     "openpyxl>=3.1.5",
