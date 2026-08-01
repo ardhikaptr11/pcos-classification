@@ -72,8 +72,8 @@ def train_baseline(
         mlflow.set_tag("run_type", "baseline")
         mlflow.set_tag("is_champion", "false")
 
-    if active_run or env_run_id:
-        current_run_id = active_run.info.run_id if active_run else env_run_id
+    if active_run:
+        current_run_id = active_run.info.run_id
 
         apply_tags()
         mlflow.set_tag(key="mlflow.runName", value=run_name)
@@ -85,7 +85,18 @@ def train_baseline(
             eval_data=eval_data,
             run_id=current_run_id,
         )
-
+    elif env_run_id:
+        with mlflow.start_run(run_id=env_run_id) as run:
+            apply_tags()
+            mlflow.set_tag(key="mlflow.runName", value=run_name)
+            
+            trained_model = _train_and_evaluate(
+                params=params,
+                X_train=X_train,
+                y_train=y_train,
+                eval_data=eval_data,
+                run_id=run.info.run_id,
+            )
     else:
         with mlflow.start_run(run_name=run_name) as run:
             apply_tags()

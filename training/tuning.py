@@ -172,11 +172,11 @@ def train_tuning(
         mlflow.set_tag("run_type", "baseline")
         mlflow.set_tag("is_champion", "false")
 
-    if active_run or env_run_id:
-        current_run_id = active_run.info.run_id if active_run else env_run_id
+    if active_run:
+        current_run_id = active_run.info.run_id
 
-        mlflow.set_tag("mlflow.runName", run_name)
         apply_tags()
+        mlflow.set_tag("mlflow.runName", run_name)
 
         _log_artifacts(
             best_params=best_params,
@@ -189,6 +189,22 @@ def train_tuning(
         )
 
         _evaluate(run_id=current_run_id, eval_data=eval_data)
+    elif env_run_id:
+        with mlflow.start_run(run_id=env_run_id) as run:
+            apply_tags()
+            mlflow.set_tag("mlflow.runName", run_name)
+        
+            _log_artifacts(
+                best_params=best_params,
+                opt_target_name=optimization_target,
+                sampler_name=sampler.__class__.__name__,
+                best_value=study.best_value,
+                df=X_test,
+                labels={"true": y_test, "pred": y_pred, "prob": y_prob},
+                best_model=best_model,
+            )
+
+            _evaluate(run_id=run.info.run_id, eval_data=eval_data)   
     else:
         with mlflow.start_run(run_name=run_name) as run:
             apply_tags()
