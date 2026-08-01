@@ -1,4 +1,6 @@
-# PCOS Classification
+<h2 align="center">
+  PCOS Classification
+</h2>
 
 <p align="center">
   <img src="https://github.com/ardhikaptr11/pcos-classification/actions/workflows/train.yml/badge.svg" alt="Train">
