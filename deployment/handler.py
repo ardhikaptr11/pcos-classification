@@ -42,7 +42,7 @@ def handle(args):
         gdrive_client = GoogleDrive(
             credentials=envs["GDRIVE_CREDENTIALS"], folder_id=envs["GDRIVE_FOLDER_ID"]
         )
-        dagshub_client = DagsHub(model_name="pcos-xgboost")
+        dagshub_client = DagsHub(model_name=envs["MODEL_NAME"])
 
         if args.source not in ["dagshub", "gdrive"]:
             raise ValueError(f"Unknown model source argument: {args.source}")

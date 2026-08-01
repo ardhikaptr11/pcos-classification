@@ -138,8 +138,8 @@ class GoogleDrive:
 
 
 class DagsHub:
-    def __init__(self, model_name: str = "pcos-xgboost"):
-        self.model_name = model_name
+    def __init__(self, model_name: str):
+        self.model_name = model_name if model_name else "pcos-xgboost"
         self.alias = "champion"
 
     @internal
