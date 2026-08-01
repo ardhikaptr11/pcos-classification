@@ -139,6 +139,11 @@ jobs:
           git config --global user.email "bot@github-actions.com"
           git config --global user.name "GitHub Actions"
           
+          rm -rf dataset/
+          rm -rf preprocessing/
+          rm -rf training/
+          rm -rf notebooks/
+          
           git add requirements.txt
           git add . 
           
