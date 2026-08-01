@@ -7,6 +7,7 @@ load_dotenv()
 envs: dict[str, str] = {
     "HOST": os.getenv("HOST", "127.0.0.1"),
     "PORT": os.getenv("PORT", "8000"),
+    "MODEL_NAME": os.getenv("MODEL_NAME", "pcos-xgboost"),
     "MLFLOW_RUN_ID": os.getenv("MLFLOW_RUN_ID", ""),
     "MLFLOW_TRACKING_URI": os.getenv("MLFLOW_TRACKING_URI", ""),
     "MLFLOW_TRACKING_URI_LOCAL": os.getenv("MLFLOW_TRACKING_URI_LOCAL", ""),
