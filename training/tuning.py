@@ -193,7 +193,7 @@ def train_tuning(
         with mlflow.start_run(run_id=env_run_id) as run:
             apply_tags()
             mlflow.set_tag("mlflow.runName", run_name)
-        
+
             _log_artifacts(
                 best_params=best_params,
                 opt_target_name=optimization_target,
@@ -204,7 +204,7 @@ def train_tuning(
                 best_model=best_model,
             )
 
-            _evaluate(run_id=run.info.run_id, eval_data=eval_data)   
+            _evaluate(run_id=run.info.run_id, eval_data=eval_data)
     else:
         with mlflow.start_run(run_name=run_name) as run:
             apply_tags()

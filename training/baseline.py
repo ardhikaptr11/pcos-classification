@@ -89,7 +89,7 @@ def train_baseline(
         with mlflow.start_run(run_id=env_run_id) as run:
             apply_tags()
             mlflow.set_tag(key="mlflow.runName", value=run_name)
-            
+
             trained_model = _train_and_evaluate(
                 params=params,
                 X_train=X_train,
