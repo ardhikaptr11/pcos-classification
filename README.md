@@ -17,6 +17,8 @@
 
 ## Overview
 
+**🔗 Live demo: [PCOS Pal](https://pcos-pal-liart.vercel.app)**
+
 This project shows an end-to-end ML system for PCOS risk classification to predicts whether a patient has PCOS from clinical and physical examination data. For **positive** predictions, it returns the model's confidence score; for **negative** predictions, it performs risk stratification, categorizing the patient into **Low**, **Moderate**, or **High** risk. It covers the full ML lifecycle — data preprocessing, model training with hyperparameter tuning, experiment tracking, and deployment as a REST API — built as a personal portfolio project to demonstrate an end-to-end, production-style ML workflow.
 
 > **Disclaimer:** This project is for portfolio and demonstration purposes only. It is trained on a small dataset (541 records) and is **not intended for clinical or diagnostic use**.
@@ -167,10 +169,10 @@ tuning:
 ```
 
 ### Deployment
-
+ 
 - A FastAPI app (`deployment/app.py`) serves predictions, loading the trained model from an MLflow model artifact (`MODEL_PATH=model_artifacts/hub/model/MLmodel`)
 - The `deploy` CLI command exposes three subcommands: `download-model <dagshub|gdrive>` (pull model artifacts from the specified source), `serve` (run the FastAPI server), and `predict` (run one-off inference locally)
-- `deploy predict` runs inference directly in the terminal for quick local debugging without starting a server, while the `/predict` API endpoint (served via `deploy serve`) accepts structured JSON patient data from external clients — such as the planned Next.js frontend — and returns real-time predictions
+- `deploy predict` runs inference directly in the terminal for quick local debugging without starting a server, while the `/predict` API endpoint (served via `deploy serve`) accepts structured JSON patient data from external clients — such as the [PCOS Pal](https://pcos-pal-liart.vercel.app) frontend — and returns real-time predictions
 - Containerized with Docker, exposed on port `8000`
 - Sample request payloads for manual testing are provided in `data/sample_positive.json` and `data/sample_negative.json`
 
@@ -332,7 +334,7 @@ uv run pytest
 
 ## Roadmap
 
-- [ ] Next.js frontend for interactive predictions
+- [x] Next.js frontend for interactive predictions
 - [ ] Prometheus + Grafana monitoring integration
 - [ ] Separate unit and integration test suites
 
