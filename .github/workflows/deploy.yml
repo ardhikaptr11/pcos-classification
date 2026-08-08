@@ -94,6 +94,10 @@ jobs:
       HF_TOKEN: ${{ secrets.HF_TOKEN }}
       HF_USERNAME: ${{ secrets.HF_USERNAME }} 
       HF_SPACE_NAME: ${{ secrets.HF_SPACE_NAME }}
+
+      NEXTJS_REPO_NAME: ${{ secrets.NEXTJS_REPO_NAME }}
+      NEXTJS_REPO_PAT: ${{ secrets.NEXTJS_REPO_PAT }}
+      NEXTJS_GITHUB_USERNAME: ${{ secrets.NEXTJS_GITHUB_USERNAME }}
       
     steps:
       - name: Check out repository
@@ -131,25 +135,22 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/${{ secrets.DOCKER_HUB_REPO_NAME }}:latest
 
-      # NOTE: Will be implemented soon
-      # - name: Sync Model to Next.js Repository
-      #   run: |
-      #     git config --global user.email "ml-bot@github-actions.com"
-      #     git config --global user.name "ML Automation Bot"
+      - name: Sync Model to Next.js Repository
+        run: |
+          git config --global user.email "ml-bot@github-actions.com"
+          git config --global user.name "ML Automation Bot"
           
-      #     git clone https://x-access-token:${{ secrets.NEXTJS_REPO_PAT }}@github.com/${{ secrets.NEXTJS_GITHUB_USERNAME }}/${{ secrets.NEXTJS_REPO_NAME }}.git temp-nextjs-repo
+          git clone https://x-access-token:${{ secrets.NEXTJS_REPO_PAT }}@github.com/${{ secrets.NEXTJS_GITHUB_USERNAME }}/${{ secrets.NEXTJS_REPO_NAME }}.git temp-nextjs-repo
           
-      #     mkdir -p temp-nextjs-repo/api/model_artifacts/model/
+          cp model_artifacts/hub/model/model.xgb temp-nextjs-repo/api/model.xgb
           
-      #     cp model_artifacts/hub/model/model.xgb temp-nextjs-repo/api/model_artifacts/model/model.xgb
+          cd temp-nextjs-repo
           
-      #     cd temp-nextjs-repo
-          
-      #     if git status --porcelain | grep -q "model.xgb"; then
-      #       git add api/model_artifacts/model/model.xgb
-      #       git commit -m "Auto-update: Sync latest XGBoost model from ML pipeline [skip ci]"
-      #       git push origin main
-      #       echo "✅ Model synced successfully!"
-      #     else
-      #       echo "ℹ️ No changes detected. Model already up-to-date."
-      #     fi
+          if git status --porcelain | grep -q "model.xgb"; then
+            git add api/model.xgb
+            git commit -m "Auto-update: Sync latest XGBoost model from ML pipeline [skip ci]"
+            git push origin main
+            echo "✅ Model synced successfully!"
+          else
+            echo "ℹ️ No changes detected. Model already up-to-date."
+          fi

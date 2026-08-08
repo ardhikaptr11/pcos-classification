@@ -114,9 +114,7 @@ async def health():
 @app.post("/predict")
 def predict_endpoint(data: PatientData):
     if predictor is None:
-        raise HTTPException(
-            status_code=503, detail="Service Unavailable: Model is not loaded."
-        )
+        raise HTTPException(status_code=503, detail="Model is not loaded.")
 
     try:
         result = predictor.predict(data.model_dump())
