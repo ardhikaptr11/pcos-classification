@@ -75,7 +75,7 @@ jobs:
           uv run python main.py deploy serve --help
 
   build-and-deploy:
-    name: Build Docker & Deploy to HF Space
+    name: Build Docker & Deploy Model
     needs: test-deployment 
     runs-on: ubuntu-latest
     if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
